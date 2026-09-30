@@ -57,7 +57,7 @@ struct SegTree
         }
     }
 
-    void build(int id, int l, int r, vl &v)
+    void build(int id, int l, int r, vector<ll> &v)
     {
         if(l == r)
         {
