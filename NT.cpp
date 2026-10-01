@@ -57,6 +57,39 @@ void pre()
     }
 }
 
+// m = Root(r), TC -> O( (R - L) loglogR + mloglogm)
+vector<char> SegmentedSieve(ll L, ll R)
+{
+    // generate all primes 
+    ll lim = sqrtl(R);
+    vector<char> mark(lim+1, 0);
+
+    vector<ll> primes;
+
+    for(ll i = 2; i <= lim; i++)
+    {
+        if(! mark[i])
+        {
+            primes.emplace_back(i);
+            for(ll j = i*i; j <= lim; j+= i)
+                mark[j] = true;
+        }
+    }
+
+    vector<char> isPrime(R - L +1, true);
+    for(ll i : primes)
+    {
+        for(ll j = max(i*i, (L+i-1)/(i*i)); j <= R; j += i)
+        {
+            isPrime[j - L] = false;
+        }
+    }
+
+    if(L == 1)
+        isPrime[0] = false;
+    return isPrime;
+}
+
 // O(log N) Prime Factorization using SPF
 vector<pair<ll, ll>> factorize(ll x)
 {
