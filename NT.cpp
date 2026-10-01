@@ -157,3 +157,125 @@ vector<ll> get_all_factors(ll x)
     //sort(divisors.begin(), divisors.end()); 
     return divisors;
 }
+
+// For factoring 64-bit numbers 
+// usage : vector<ll> = PollardRho::factorize(N);
+// TC -> is_prime(N) in O(log ^ 3 n) and factorize(N) in O(n ^ 1/4)
+struct PollardRho 
+{
+    // Fast modular exponentiation using __int128 to prevent overflow
+    static ll binpow(ll base, ll exp, ll mod) 
+    {
+        ll res = 1;
+        base %= mod;
+        while(exp > 0) 
+        {
+            if(exp % 2 == 1) 
+            {
+                res = (ll)((__int128)res * base % mod);
+            }
+            base = (ll)((__int128)base * base % mod);
+            exp /= 2;
+        }
+        return res;
+    }
+
+    // Deterministic Miller-Rabin for 64-bit integers
+    static bool is_prime(ll n) 
+    {
+        if(n < 2) return false;
+        if(n == 2 || n == 3) return true;
+        if(n % 2 == 0) return false;
+
+        ll d = n - 1;
+        int s = 0;
+        while(d % 2 == 0) 
+        {
+            d /= 2;
+            s++;
+        }
+
+        // These bases guarantee correct results for all N < 2^64
+        static const ll bases[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37};
+        
+        for(ll a : bases) 
+        {
+            if(n <= a) break;
+            
+            ll x = binpow(a, d, n);
+            if(x == 1 || x == n - 1) continue;
+            
+            bool composite = true;
+            for(int r = 1; r < s; r++) 
+            {
+                x = (ll)((__int128)x * x % n);
+                if(x == n - 1) 
+                {
+                    composite = false;
+                    break;
+                }
+            }
+            if(composite) return false;
+        }
+        return true;
+    }
+
+    // Pollard's Rho algorithm to find a non-trivial factor
+    static ll get_factor(ll n) 
+    {
+        if(n % 2 == 0) return 2;
+        
+        // Random number generator
+        static mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+        
+        ll x = 2, y = 2, d = 1;
+        ll c = rng() % (n - 1) + 1;
+
+        auto f = [&](ll x, ll n, ll c) 
+        {
+            return (ll)(((__int128)x * x + c) % n);
+        };
+
+        while(d == 1) 
+        {
+            x = f(x, n, c);               // Tortoise move
+            y = f(f(y, n, c), n, c);      // Hare move
+            d = std::gcd(abs(x - y), n);
+            
+            if(d == n) 
+            {
+                // Cycle found without finding a proper factor, randomize and retry
+                x = rng() % (n - 2) + 2;
+                y = x;
+                c = rng() % (n - 1) + 1;
+                d = 1;
+            }
+        }
+        return d;
+    }
+
+    // Internal recursive function to find all prime factors
+    static void factorize_recursive(ll n, vector<ll>& factors) 
+    {
+        if(n == 1) return;
+        
+        if(is_prime(n)) 
+        {
+            factors.push_back(n);
+            return;
+        }
+        
+        ll divisor = get_factor(n);
+        factorize_recursive(divisor, factors);
+        factorize_recursive(n / divisor, factors);
+    }
+
+    // Main callable function: Returns sorted prime factors of N
+    static vector<ll> factorize(ll n) 
+    {
+        vector<ll> factors;
+        factorize_recursive(n, factors);
+        sort(factors.begin(), factors.end());
+        return factors;
+    }
+};
